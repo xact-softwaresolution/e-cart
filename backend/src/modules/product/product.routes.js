@@ -1,40 +1,42 @@
-const express = require('express');
-const productController = require('./product.controller');
-const { protect, restrictTo } = require('../../shared/middleware/auth');
-const validate = require('../../shared/middleware/validate');
-const { productSchema, categorySchema } = require('./product.validation');
+const express = require("express");
+const productController = require("./product.controller");
+const { protect, restrictTo } = require("../../shared/middleware/auth");
+const validate = require("../../shared/middleware/validate");
+const { productSchema, categorySchema } = require("./product.validation");
+const upload = require("../../shared/middleware/upload");
 
 const router = express.Router();
 
-router.route('/')
+router
+  .route("/")
   .get(productController.getAllProducts)
   .post(
-    protect, 
-    restrictTo('ADMIN'), 
-    validate(productSchema), 
-    productController.createProduct
+    protect,
+    restrictTo("ADMIN"),
+    upload.single("image"),
+    validate(productSchema),
+    productController.createProduct,
   );
 
-router.route('/categories')
+router
+  .route("/categories")
   .get(productController.getCategories)
   .post(
     protect,
-    restrictTo('ADMIN'),
+    restrictTo("ADMIN"),
     validate(categorySchema),
-    productController.createCategory
+    productController.createCategory,
   );
 
-router.route('/:id')
+router
+  .route("/:id")
   .get(productController.getProduct)
   .patch(
-    protect, 
-    restrictTo('ADMIN'), 
-    productController.updateProduct
+    protect,
+    restrictTo("ADMIN"),
+    upload.single("image"),
+    productController.updateProduct,
   )
-  .delete(
-    protect, 
-    restrictTo('ADMIN'), 
-    productController.deleteProduct
-  );
+  .delete(protect, restrictTo("ADMIN"), productController.deleteProduct);
 
 module.exports = router;
