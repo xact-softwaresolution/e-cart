@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+npm-debug.log
+npm-error.log
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output
+build/
+dist/
+.next/
+out/
+.cache/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.code-workspace
+.env.*.vault
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# React specific
+src/**/*.css.map
+.parcel-cache
