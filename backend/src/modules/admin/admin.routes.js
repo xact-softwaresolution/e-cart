@@ -119,6 +119,9 @@ router.get("/orders/metrics", adminController.getOrderMetrics);
 // Get all users
 router.get("/users", adminController.getAllUsers);
 
+// Get user metrics
+router.get("/users/metrics", adminController.getUserMetrics);
+
 // Get user by ID
 router.get(
   "/users/:userId",
@@ -141,8 +144,7 @@ router.delete(
   adminController.deleteUser,
 );
 
-// Get user metrics
-router.get("/users/metrics", adminController.getUserMetrics);
+
 
 // ============================================
 // DASHBOARD ANALYTICS ROUTES

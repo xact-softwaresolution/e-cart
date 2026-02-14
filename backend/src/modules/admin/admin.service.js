@@ -1,7 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../../shared/prisma/client");
 const AppError = require("../../shared/utils/AppError");
-
-const prisma = new PrismaClient();
 
 // ============================================
 // PRODUCT MANAGEMENT
@@ -285,7 +283,7 @@ const getOrderMetrics = async () => {
 
 const getAllUsers = async (page = 1, limit = 20, role = null) => {
   const skip = (page - 1) * limit;
-  const where = role ? { role } : {};
+  const where = role ? { role, isDeleted: false } : { isDeleted: false };
 
   const users = await prisma.user.findMany({
     where,
@@ -310,8 +308,8 @@ const getAllUsers = async (page = 1, limit = 20, role = null) => {
 };
 
 const getUserById = async (userId) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+  const user = await prisma.user.findFirst({
+    where: { id: userId, isDeleted: false },
     include: {
       orders: {
         take: 5,
@@ -350,23 +348,13 @@ const updateUserRole = async (userId, newRole) => {
 
 const deleteUser = async (userId) => {
   try {
-    // Check if user has orders
-    const orderCount = await prisma.order.count({
-      where: { userId },
-    });
-
-    if (orderCount > 0) {
-      throw new AppError(
-        "Cannot delete user with existing orders. Deactivate account instead.",
-        400,
-      );
-    }
-
-    await prisma.user.delete({
+    // Soft-delete the user so order history remains intact
+    await prisma.user.update({
       where: { id: userId },
+      data: { isDeleted: true },
     });
 
-    return { message: "User deleted successfully" };
+    return { message: "User deactivated (soft-deleted) successfully" };
   } catch (error) {
     if (error.code === "P2025") {
       throw new AppError("User not found", 404);
@@ -376,18 +364,19 @@ const deleteUser = async (userId) => {
 };
 
 const getUserMetrics = async () => {
-  const totalUsers = await prisma.user.count();
+  const totalUsers = await prisma.user.count({ where: { isDeleted: false } });
 
   const adminCount = await prisma.user.count({
-    where: { role: "ADMIN" },
+    where: { role: "ADMIN", isDeleted: false },
   });
 
   const customerCount = await prisma.user.count({
-    where: { role: "USER" },
+    where: { role: "USER", isDeleted: false },
   });
 
   const activeUsers = await prisma.user.count({
     where: {
+      isDeleted: false,
       orders: {
         some: {},
       },

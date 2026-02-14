@@ -1,22 +1,20 @@
-const { PrismaClient } = require('@prisma/client');
-const AppError = require('../../shared/utils/AppError');
-
-const prisma = new PrismaClient();
+const prisma = require("../../shared/prisma/client");
+const AppError = require("../../shared/utils/AppError");
 
 const getUserById = async (id) => {
-  const user = await prisma.user.findUnique({
-    where: { id },
+  const user = await prisma.user.findFirst({
+    where: { id, isDeleted: false },
     include: {
       addresses: true,
       orders: {
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      }
-    }
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      },
+    },
   });
 
   if (!user) {
-    throw new AppError('User not found', 404);
+    throw new AppError("User not found", 404);
   }
 
   user.password = undefined;
@@ -26,12 +24,12 @@ const getUserById = async (id) => {
 const updateProfile = async (userId, updateData) => {
   // Prevent password update via this route
   if (updateData.password || updateData.role) {
-    throw new AppError('This route is not for password or role updates.', 400);
+    throw new AppError("This route is not for password or role updates.", 400);
   }
 
   const user = await prisma.user.update({
     where: { id: userId },
-    data: updateData
+    data: updateData,
   });
 
   user.password = undefined;
@@ -43,15 +41,15 @@ const addAddress = async (userId, addressData) => {
   if (addressData.isDefault) {
     await prisma.address.updateMany({
       where: { userId },
-      data: { isDefault: false }
+      data: { isDefault: false },
     });
   }
 
   const address = await prisma.address.create({
     data: {
       ...addressData,
-      userId
-    }
+      userId,
+    },
   });
 
   return address;
@@ -59,7 +57,7 @@ const addAddress = async (userId, addressData) => {
 
 const getAddresses = async (userId) => {
   return await prisma.address.findMany({
-    where: { userId }
+    where: { userId },
   });
 };
 
@@ -67,5 +65,5 @@ module.exports = {
   getUserById,
   updateProfile,
   addAddress,
-  getAddresses
+  getAddresses,
 };

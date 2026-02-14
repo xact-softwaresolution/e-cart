@@ -1,13 +1,11 @@
-require('dotenv').config();
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
-
-const prisma = new PrismaClient();
+require("dotenv").config();
+const prisma = require("../src/shared/prisma/client");
+const bcrypt = require("bcrypt");
 
 async function main() {
-  const email = 'admin@example.com';
-  const password = 'adminpassword123';
-  const role = 'ADMIN';
+  const email = "admin@example.com";
+  const password = "adminpassword123";
+  const role = "ADMIN";
 
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -19,21 +17,20 @@ async function main() {
       data: {
         email,
         password: hashedPassword,
-        name: 'Admin User',
+        name: "Admin User",
         role,
       },
     });
     console.log(`Created admin user: ${user.email}`);
-    
+
     // Create cart for admin
     await prisma.cart.create({
       data: {
-        userId: user.id
-      }
+        userId: user.id,
+      },
     });
-
   } else {
-    console.log('Admin user already exists');
+    console.log("Admin user already exists");
   }
 }
 

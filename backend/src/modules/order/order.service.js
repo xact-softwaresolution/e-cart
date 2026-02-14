@@ -1,7 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../../shared/prisma/client");
 const AppError = require("../../shared/utils/AppError");
-
-const prisma = new PrismaClient();
 
 /**
  * Create a new order from cart

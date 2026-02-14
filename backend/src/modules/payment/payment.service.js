@@ -2,7 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const crypto = require("crypto");
 const AppError = require("../../shared/utils/AppError");
 
-const prisma = new PrismaClient();
+const prisma = require("../../shared/prisma/client");
 
 // Razorpay integration
 let Razorpay;

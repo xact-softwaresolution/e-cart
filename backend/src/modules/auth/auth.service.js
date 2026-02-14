@@ -1,26 +1,24 @@
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const AppError = require('../../shared/utils/AppError');
+const prisma = require("../../shared/prisma/client");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const AppError = require("../../shared/utils/AppError");
 
-const prisma = new PrismaClient();
-
-const signToken = id => {
+const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '90d'
+    expiresIn: "90d",
   });
 };
 
 const register = async (userData) => {
   const { name, email, password, role } = userData;
 
-  // Check if user exists
-  const existingUser = await prisma.user.findUnique({
-    where: { email }
+  // Check if user exists (including soft-deleted)
+  const existingUser = await prisma.user.findFirst({
+    where: { email, isDeleted: false },
   });
 
   if (existingUser) {
-    throw new AppError('Email already in use', 400);
+    throw new AppError("Email already in use", 400);
   }
 
   // Hash password
@@ -32,15 +30,15 @@ const register = async (userData) => {
       name,
       email,
       password: hashedPassword,
-      role: role || 'USER'
-    }
+      role: role || "USER",
+    },
   });
 
   // Create empty cart for user
   await prisma.cart.create({
     data: {
-      userId: user.id
-    }
+      userId: user.id,
+    },
   });
 
   const token = signToken(user.id);
@@ -52,12 +50,12 @@ const register = async (userData) => {
 };
 
 const login = async (email, password) => {
-  const user = await prisma.user.findUnique({
-    where: { email }
+  const user = await prisma.user.findFirst({
+    where: { email, isDeleted: false },
   });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw new AppError('Incorrect email or password', 401);
+    throw new AppError("Incorrect email or password", 401);
   }
 
   const token = signToken(user.id);
@@ -68,5 +66,5 @@ const login = async (email, password) => {
 
 module.exports = {
   register,
-  login
+  login,
 };

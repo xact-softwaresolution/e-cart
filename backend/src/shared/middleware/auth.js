@@ -1,23 +1,21 @@
-const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
-const AppError = require('../utils/AppError');
-const catchAsync = require('../utils/catchAsync');
-
-const prisma = new PrismaClient();
+const jwt = require("jsonwebtoken");
+const prisma = require("../prisma/client");
+const AppError = require("../utils/AppError");
+const catchAsync = require("../utils/catchAsync");
 
 const protect = catchAsync(async (req, res, next) => {
   // 1) Getting token and check of it's there
   let token;
   if (
     req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
+    req.headers.authorization.startsWith("Bearer")
   ) {
-    token = req.headers.authorization.split(' ')[1];
+    token = req.headers.authorization.split(" ")[1];
   }
 
   if (!token) {
     return next(
-      new AppError('You are not logged in! Please log in to get access.', 401)
+      new AppError("You are not logged in! Please log in to get access.", 401),
     );
   }
 
@@ -25,16 +23,16 @@ const protect = catchAsync(async (req, res, next) => {
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
   // 3) Check if user still exists
-  const currentUser = await prisma.user.findUnique({
-    where: { id: decoded.id }
+  const currentUser = await prisma.user.findFirst({
+    where: { id: decoded.id, isDeleted: false },
   });
 
   if (!currentUser) {
     return next(
       new AppError(
-        'The user belonging to this token does no longer exist.',
-        401
-      )
+        "The user belonging to this token does no longer exist.",
+        401,
+      ),
     );
   }
 
@@ -48,7 +46,7 @@ const restrictTo = (...roles) => {
     // roles ['admin', 'lead-guide']. role='user'
     if (!roles.includes(req.user.role)) {
       return next(
-        new AppError('You do not have permission to perform this action', 403)
+        new AppError("You do not have permission to perform this action", 403),
       );
     }
 
@@ -58,5 +56,5 @@ const restrictTo = (...roles) => {
 
 module.exports = {
   protect,
-  restrictTo
+  restrictTo,
 };
