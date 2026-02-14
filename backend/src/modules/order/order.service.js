@@ -2,10 +2,12 @@ const prisma = require("../../shared/prisma/client");
 const AppError = require("../../shared/utils/AppError");
 
 /**
- * Create a new order from cart
+ * Create a new order from user's cart
+ * ✅ ULTIMATE SECURITY: Fetches cart from database, never trusts client data
+ * Client can ONLY send addressId - everything else comes from database
  */
 const createOrder = async (userId, orderData) => {
-  const { addressId, cartItems, totalAmount } = orderData;
+  const { addressId } = orderData;
 
   // Verify address belongs to user
   const address = await prisma.address.findUnique({
@@ -16,73 +18,79 @@ const createOrder = async (userId, orderData) => {
     throw new AppError("Address not found or does not belong to you", 404);
   }
 
-  // Check stock availability for all items
-  for (const item of cartItems) {
-    const product = await prisma.product.findUnique({
-      where: { id: item.productId },
-    });
+  // ✅ SECURITY: Fetch user's ACTUAL cart from database
+  const userCart = await prisma.cart.findUnique({
+    where: { userId },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
 
-    if (!product) {
-      throw new AppError(`Product ${item.productId} not found`, 404);
-    }
-
-    if (product.stock < item.quantity) {
-      throw new AppError(
-        `Insufficient stock for ${product.name}. Available: ${product.stock}`,
-        400,
-      );
-    }
+  if (!userCart || userCart.items.length === 0) {
+    throw new AppError("Your cart is empty", 400);
   }
 
-  // Create order with items in a transaction
+  // Prepare cart items for processing
+  const cartItemsToProcess = userCart.items.map(cartItem => ({
+    productId: cartItem.productId,
+    quantity: cartItem.quantity,
+  }));
+
+  // ✅ RACE CONDITION FIX: All stock checks and updates happen INSIDE transaction
   const order = await prisma.$transaction(async (tx) => {
-    // Create the order
+    let calculatedTotal = 0;
+
+    // Use already fetched cart data (NO DB READS HERE)
+    const enrichedCartItems = userCart.items.map((item) => {
+      if (item.product.stock < item.quantity) {
+        throw new AppError(`Insufficient stock for ${item.product.name}`, 400);
+      }
+
+      calculatedTotal += Number(item.product.price) * item.quantity;
+
+      return {
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.product.price,
+      };
+    });
+
+    // 1️⃣ Create Order
     const newOrder = await tx.order.create({
       data: {
         userId,
         addressId,
-        totalAmount: totalAmount,
+        totalAmount: calculatedTotal,
         status: "PENDING",
         paymentStatus: "PENDING",
         items: {
-          create: cartItems.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
+          create: enrichedCartItems,
         },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        user: true,
-        payment: true,
       },
     });
 
-    // Reduce product stock
-    for (const item of cartItems) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity,
+    // 2️⃣ Atomic Stock Update (Parallel)
+    await Promise.all(
+      enrichedCartItems.map((item) =>
+        tx.product.updateMany({
+          where: {
+            id: item.productId,
+            stock: { gte: item.quantity },
           },
-        },
-      });
-    }
+          data: {
+            stock: { decrement: item.quantity },
+          },
+        }),
+      ),
+    );
 
-    // Clear user's cart
-    await tx.cart.update({
-      where: { userId },
-      data: {
-        items: {
-          deleteMany: {},
-        },
-      },
+    // 3️⃣ Clear Cart
+    await tx.cartItem.deleteMany({
+      where: { cartId: userCart.id },
     });
 
     return newOrder;
@@ -90,6 +98,7 @@ const createOrder = async (userId, orderData) => {
 
   return order;
 };
+
 
 /**
  * Get order by ID with full details

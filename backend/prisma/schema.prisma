@@ -68,6 +68,9 @@ model Product {
 
   cartItems   CartItem[]
   orderItems  OrderItem[]
+  
+  // 🛡️ Database-level constraint: prevent negative stock
+  @@check(stock >= 0, name: "stock_non_negative")
 }
 
 model Category {

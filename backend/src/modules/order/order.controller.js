@@ -13,7 +13,10 @@ const createOrder = catchAsync(async (req, res, next) => {
     status: "success",
     message: "Order created successfully",
     data: result,
+    
   });
+  console.log(req.body);
+
 });
 
 /**
