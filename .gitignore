@@ -1,0 +1,72 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+*.lock
+!package-lock.json
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# Runtime logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Database files
+*.sqlite
+*.db
+*.sqlite3
+
+# OS files
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Prisma
+prisma/.env
+prisma/seed.js.bak
+
+# Testing
+cypress/downloads/
+cypress/screenshots/
+cypress/videos/
+
+# Documentation build files
+docs/.vuepress/dist/
+
+# Miscellaneous
+.cache/
+.git/
+*.bak
+*.orig
