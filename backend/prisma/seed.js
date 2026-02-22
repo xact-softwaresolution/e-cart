@@ -3,8 +3,8 @@ const prisma = require("../src/shared/prisma/client");
 const bcrypt = require("bcrypt");
 
 async function main() {
-  const email = "admin@example.com";
-  const password = "adminpassword123";
+  const email = "admin@gmail.com";
+  const password = "admin123";
   const role = "ADMIN";
 
   const existingUser = await prisma.user.findUnique({

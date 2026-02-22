@@ -34,6 +34,7 @@ model User {
   name      String?
   isDeleted Boolean   @default(false)
   role      Role      @default(USER)
+  refreshToken String?    // store rotated refresh token
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -70,7 +71,7 @@ model Product {
   orderItems  OrderItem[]
   
   // 🛡️ Database-level constraint: prevent negative stock
-  @@check(stock >= 0, name: "stock_non_negative")
+  // @@check(stock >= 0, name: "stock_non_negative")   // commented out for Prisma compatibility
 }
 
 model Category {

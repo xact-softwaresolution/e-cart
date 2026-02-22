@@ -3,9 +3,28 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const AppError = require("../../shared/utils/AppError");
 
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "90d",
+// helper functions for access/refresh tokens
+// ensure secrets are provided; otherwise the error you saw is thrown deep in jsonwebtoken
+const signAccessToken = (id) => {
+  let secret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new AppError("JWT_ACCESS_SECRET (or JWT_SECRET) is not defined", 500);
+  }
+  return jwt.sign({ id }, secret, {
+    expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m",
+  });
+};
+
+const signRefreshToken = (id) => {
+  let secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new AppError(
+      "JWT_REFRESH_SECRET (or JWT_SECRET) is not defined",
+      500,
+    );
+  }
+  return jwt.sign({ id }, secret, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES || "5d",
   });
 };
 
@@ -41,12 +60,19 @@ const register = async (userData) => {
     },
   });
 
-  const token = signToken(user.id);
+  // generate tokens and persist refresh token to db
+  const accessToken = signAccessToken(user.id);
+  const refreshToken = signRefreshToken(user.id);
 
-  // Remove password from output
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { refreshToken },
+  });
+
+  // Remove password before returning
   user.password = undefined;
 
-  return { user, token };
+  return { user, accessToken, refreshToken };
 };
 
 const login = async (email, password) => {
@@ -58,13 +84,92 @@ const login = async (email, password) => {
     throw new AppError("Incorrect email or password", 401);
   }
 
-  const token = signToken(user.id);
+  // create new tokens and update refresh token in db (rotate)
+  const accessToken = signAccessToken(user.id);
+  const refreshToken = signRefreshToken(user.id);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { refreshToken },
+  });
+
   user.password = undefined;
 
-  return { user, token };
+  return { user, accessToken, refreshToken };
+};
+
+// verify refresh token and return new access/refresh pair
+const refreshTokens = async (token) => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.id, isDeleted: false },
+    });
+
+    if (!user || user.refreshToken !== token) {
+      throw new AppError("Invalid refresh token", 401);
+    }
+
+    // rotate tokens
+    const newAccess = signAccessToken(user.id);
+    const newRefresh = signRefreshToken(user.id);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: newRefresh },
+    });
+
+    user.password = undefined;
+    user.refreshToken = undefined;
+    return { user, accessToken: newAccess, refreshToken: newRefresh };
+  } catch (err) {
+    throw new AppError("Could not refresh tokens", 401);
+  }
+};
+
+// clear refresh token on logout
+const logout = async (userId) => {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { refreshToken: null },
+  });
+};
+
+const getProfile = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
+      addresses: {
+        where: { isDeleted: false },
+        select: {
+          id: true,
+          street: true,
+          city: true,
+          state: true,
+          postalCode: true,
+          country: true,
+          phone: true,
+          isDefault: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  return user;
 };
 
 module.exports = {
   register,
   login,
+  getProfile,
+  refreshTokens,
+  logout,
 };
