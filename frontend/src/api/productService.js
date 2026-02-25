@@ -1,22 +1,14 @@
-import api from '../lib/axios';
+import api from "../lib/axios";
 
 export const productService = {
-  getAll: async ({ page = 1, limit = 12, search = '' } = {}) => {
-    const params = new URLSearchParams();
-    if (page) params.append('page', page);
-    if (limit) params.append('limit', limit);
-    if (search) params.append('search', search);
-    const res = await api.get(`/products?${params.toString()}`);
-    return res.data;
+  getAll: async ({ page = 1, limit = 12, search = "", category = "" } = {}) => {
+    const params = { page, limit };
+    if (search) params.search = search;
+    if (category) params.category = category;
+    return (await api.get("/products", { params } )).data;
   },
 
-  getById: async (id) => {
-    const res = await api.get(`/products/${id}`);
-    return res.data;
-  },
+  getById: async (id) => (await api.get(`/products/${id}` )).data,
 
-  getCategories: async () => {
-    const res = await api.get('/products/categories');
-    return res.data;
-  },
+  getCategories: async () => (await api.get("/products/categories" )).data,
 };

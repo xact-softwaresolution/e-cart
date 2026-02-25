@@ -10,7 +10,17 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 15000,
-  withCredentials: true, // include cookies
+  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 // when server returns 401 attempt a refresh once then retry
@@ -18,27 +28,30 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    // avoid infinite loop: don't attempt refresh if the failing request is the
-    // refresh endpoint itself
+
     if (
       error.response?.status === 401 &&
-      !original._retry &&
-      !original.url?.includes("/auth/refresh")
+      !original?._retry &&
+      !original?.url?.includes("/auth/refresh")
     ) {
       original._retry = true;
+
       try {
         const res = await api.get("/auth/refresh");
-        // if refresh returns user, update store
-        const user = res.data?.data?.user || res.data?.user;
+        const payload = res.data?.data || res.data;
+        const user = payload?.user;
+        const token = payload?.accessToken;
+
         if (user) {
-          useAuthStore.getState().setUser(user);
+          useAuthStore.getState().setUser(user, token);
         }
+
         return api(original);
-      } catch (refreshErr) {
-        // refresh also failed – clear auth state (user will be logged out)
+      } catch {
         useAuthStore.getState().clearAuth();
       }
     }
+
     return Promise.reject(error);
   },
 );

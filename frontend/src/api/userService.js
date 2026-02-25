@@ -1,23 +1,11 @@
-import api from '../lib/axios';
+import api from "../lib/axios";
 
 export const userService = {
-  getMe: async () => {
-    const res = await api.get('/users/me');
-    return res.data;
-  },
+  getMe: async () => (await api.get("/users/me" )).data,
 
-  updateMe: async (data) => {
-    const res = await api.patch('/users/me', data);
-    return res.data;
-  },
+  updateMe: async (data) => (await api.patch("/users/me", data )).data,
 
-  getAddresses: async () => {
-    const res = await api.get('/users/addresses');
-    return res.data;
-  },
+  getAddresses: async () => (await api.get("/users/addresses" )).data,
 
-  addAddress: async (data) => {
-    const res = await api.post('/users/addresses', data);
-    return res.data;
-  },
+  addAddress: async (data) => (await api.post("/users/addresses", data )).data,
 };
