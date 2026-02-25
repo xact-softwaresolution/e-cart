@@ -22,7 +22,12 @@ const protect = catchAsync(async (req, res, next) => {
   }
 
   // 2) Verification token
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const accessSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
+  if (!accessSecret) {
+    return next(new AppError("JWT_ACCESS_SECRET (or JWT_SECRET) is not defined", 500));
+  }
+
+  const decoded = jwt.verify(token, accessSecret);
 
   // 3) Check if user still exists
   const currentUser = await prisma.user.findFirst({

@@ -100,7 +100,17 @@ const login = async (email, password) => {
 // verify refresh token and return new access/refresh pair
 const refreshTokens = async (token) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const refreshSecret =
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+
+    if (!refreshSecret) {
+      throw new AppError(
+        "JWT_REFRESH_SECRET (or JWT_SECRET) is not defined",
+        500,
+      );
+    }
+
+    const decoded = jwt.verify(token, refreshSecret);
     const user = await prisma.user.findFirst({
       where: { id: decoded.id, isDeleted: false },
     });

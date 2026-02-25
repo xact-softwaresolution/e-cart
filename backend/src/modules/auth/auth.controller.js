@@ -14,7 +14,6 @@ const register = catchAsync(async (req, res, next) => {
     req.body,
   );
 
-  // set cookies
   res
     .cookie("accessToken", accessToken, {
       ...COOKIE_OPTIONS,
@@ -27,7 +26,7 @@ const register = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    data: { user },
+    data: { user, accessToken },
   });
 });
 
@@ -50,12 +49,11 @@ const login = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { user },
+    data: { user, accessToken },
   });
 });
 
 const getProfile = catchAsync(async (req, res, next) => {
-  // ✅ User is attached by protect middleware
   const user = await authService.getProfile(req.user.id);
 
   res.status(200).json({
@@ -83,11 +81,10 @@ const refresh = catchAsync(async (req, res, next) => {
       maxAge: 5 * 24 * 60 * 60 * 1000,
     });
 
-  res.status(200).json({ status: "success", data: { user } });
+  res.status(200).json({ status: "success", data: { user, accessToken } });
 });
 
 const logout = catchAsync(async (req, res, next) => {
-  // user should already be attached by protect
   const id = req.user?.id;
   if (id) {
     await authService.logout(id);

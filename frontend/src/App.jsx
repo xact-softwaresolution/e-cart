@@ -1,9 +1,11 @@
 import React, { useEffect } from "react";
+import { cartService } from "./api/cartService";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 
 import useAuthStore from "./store/authStore";
+import useCartStore from "./store/cartStore";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import MainLayout from "./components/layout/MainLayout";
 import {
@@ -45,10 +47,32 @@ const queryClient = new QueryClient({
 
 function AppInit({ children }) {
   const refreshUser = useAuthStore((s) => s.refreshUser);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setCartCount = useCartStore((s) => s.setCartCount);
 
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
+
+  useEffect(() => {
+    const syncCartCount = async () => {
+      if (!isAuthenticated) {
+        setCartCount(0);
+        return;
+      }
+
+      try {
+        const response = await cartService.getCart();
+        const payload = response?.data || response;
+        const items = payload?.items || payload?.cartItems || [];
+        setCartCount(items.length);
+      } catch {
+        setCartCount(0);
+      }
+    };
+
+    syncCartCount();
+  }, [isAuthenticated, setCartCount]);
 
   return children;
 }
