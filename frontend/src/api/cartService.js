@@ -1,28 +1,15 @@
-import api from '../lib/axios';
+import api from "../lib/axios";
 
 export const cartService = {
-  getCart: async () => {
-    const res = await api.get('/cart');
-    return res.data;
-  },
+  getCart: async () => (await api.get("/cart" )).data,
 
-  addItem: async (productId, quantity = 1) => {
-    const res = await api.post('/cart', { productId, quantity });
-    return res.data;
-  },
+  addItem: async (productId, quantity = 1) =>
+    (await api.post("/cart", { productId, quantity } )).data,
 
-  updateItem: async (itemId, quantity) => {
-    const res = await api.patch(`/cart/${itemId}`, { quantity });
-    return res.data;
-  },
+  updateItem: async (itemId, quantity) =>
+    (await api.patch(`/cart/${itemId}`, { quantity } )).data,
 
-  removeItem: async (itemId) => {
-    const res = await api.delete(`/cart/${itemId}`);
-    return res.data;
-  },
+  removeItem: async (itemId) => (await api.delete(`/cart/${itemId}` )).data,
 
-  clearCart: async () => {
-    const res = await api.delete('/cart');
-    return res.data;
-  },
+  clearCart: async () => (await api.delete("/cart" )).data,
 };

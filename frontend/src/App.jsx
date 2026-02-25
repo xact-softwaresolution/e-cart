@@ -23,6 +23,7 @@ import CheckoutPage from "./pages/checkout/CheckoutPage";
 import OrderListPage from "./pages/orders/OrderListPage";
 import OrderDetailPage from "./pages/orders/OrderDetailPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+import AddressesPage from "./pages/profile/AddressesPage";
 import PaymentHistoryPage from "./pages/payments/PaymentHistoryPage";
 import { AdminLayout, AdminDashboard } from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -36,7 +37,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       staleTime: 30000,
     },
   },
@@ -136,6 +137,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile/addresses"
+                  element={
+                    <ProtectedRoute>
+                      <AddressesPage />
                     </ProtectedRoute>
                   }
                 />

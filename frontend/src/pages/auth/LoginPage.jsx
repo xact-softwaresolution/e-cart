@@ -32,8 +32,10 @@ export default function LoginPage() {
   const mutation = useMutation({
     mutationFn: authService.login,
     onSuccess: (res) => {
-      const user = res.data?.data?.user || res.data?.data || res.data;
-      setUser(user);
+      const payload = res?.data || res;
+      const user = payload?.user || payload || null;
+      const token = payload?.accessToken || null;
+      setUser(user, token);
       toast.success("Welcome back!");
       navigate(from, { replace: true });
     },
