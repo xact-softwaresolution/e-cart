@@ -13,6 +13,6 @@ router.get("/profile", protect, authController.getProfile);
 // token refresh endpoint (uses httpOnly cookie)
 router.get("/refresh", authController.refresh);
 // logout clears cookies and revokes refresh token
-router.post("/logout", protect, authController.logout);
+router.post("/logout", authController.logout);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { authService } from "../api/authService";
+import useCartStore from "./cartStore";
 
 const AUTH_TOKEN_KEY = "ecart_access_token";
 
@@ -8,6 +9,11 @@ const storeToken = (token) => {
   if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
 };
 const clearStoredToken = () => localStorage.removeItem(AUTH_TOKEN_KEY);
+
+const clearSessionState = () => {
+  clearStoredToken();
+  useCartStore.getState().clearCartCount();
+};
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -40,11 +46,10 @@ const useAuthStore = create((set) => ({
   },
 
   clearAuth: () => {
-    clearStoredToken();
+    clearSessionState();
     set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
 
-  // try to refresh tokens / fetch profile on app load
   refreshUser: async () => {
     try {
       const res = await authService.refresh();
@@ -63,7 +68,7 @@ const useAuthStore = create((set) => ({
         isLoading: false,
       });
     } catch {
-      clearStoredToken();
+      clearSessionState();
       set({ user: null, token: null, isAuthenticated: false, isLoading: false });
     }
   },
@@ -75,7 +80,7 @@ const useAuthStore = create((set) => ({
       // ignore
     }
 
-    clearStoredToken();
+    clearSessionState();
     set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
 }));
